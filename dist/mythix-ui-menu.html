@@ -16,7 +16,14 @@
   }
 
   mythix-menu li {
-    display: inline-block;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 0;
+    flex-basis: auto;
+    justify-content: space-between;
+    position: relative;
     cursor: pointer;
     padding-top: var(--theme-padding, 0.25rem);
     padding-bottom: var(--theme-padding, 0.25rem);
@@ -24,6 +31,15 @@
     padding-right: calc(var(--theme-padding, 0.25rem) * 2.0);
     text-align: center;
     border-radius: var(--theme-border-radius, 0);
+  }
+
+  mythix-menu .mythix-menu-keybinding-callout {
+    margin-left: 2em;
+  }
+
+  mythix-menu li:not(mythix-menu > li) {
+    /* 1em extra for icon */
+    padding-right: calc(calc(var(--theme-padding, 0.25rem) * 2.0) + 1em);
   }
 
   mythix-menu hr {
@@ -37,8 +53,31 @@
 
   mythix-menu li:hover,
   mythix-menu li:focus-visible,
-  mythix-menu li.has-focus {
+  mythix-menu li.mythix-menu-has-focus {
     background-color: var(--theme-active-bg-color, var(--mythix-ui-menu-active-bg));
+  }
+
+  mythix-menu li.mythix-menu-has-sub-menu:not(mythix-menu > li)::after {
+    display: inline-block;
+    text-align: center;
+    width: 1em;
+    height: 1em;
+    line-height: 1em;
+    position: absolute;
+    right: 0;
+    content: '>';
+  }
+
+  mythix-menu li.mythix-menu-icon:not(mythix-menu > li)::after,
+  mythix-menu .mythix-menu-icon:not(mythix-menu > li) {
+    display: inline-block;
+    text-align: center;
+    width: 1em;
+    height: 1em;
+    line-height: 1em;
+    position: absolute;
+    right: 0;
+    content: ' ';
   }
 
   mythix-menu mythix-popover:not([open]) menu {

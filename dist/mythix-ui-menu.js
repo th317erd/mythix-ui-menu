@@ -37,6 +37,37 @@ export class MythixUIMenu extends MythixUIComponent {
   createShadowDOM() {
   }
 
+  generateKeybindingDisplay(encodedKey) {
+    if (!encodedKey)
+      return '';
+
+    let {
+      altKey,
+      ctrlKey,
+      shiftKey,
+      metaKey,
+      code,
+    } = this.reverseEncodedKeybinding(encodedKey);
+
+    let parts = [
+      ctrlKey && 'Ctrl',
+      shiftKey && 'Shift',
+      altKey && 'Alt',
+      metaKey && 'Meta',
+      code.replace(/^Key([A-Z])/, '$1'),
+    ].filter(Boolean);
+
+    return parts.join('+');
+  }
+
+  findKeybindingEncodingByPath(itemPath) {
+    for (let binding of Object.entries(this._keybindings)) {
+      let [ key, value ] = binding;
+      if (itemPath === value)
+        return key;
+    }
+  }
+
   mounted() {
     super.mounted();
 
@@ -88,6 +119,24 @@ export class MythixUIMenu extends MythixUIComponent {
       let tabIndex = $item.getAttribute('tabindex');
       if (tabIndex == null || tabIndex === '')
         $item.setAttribute('tabindex', tabIndexCounter++);
+
+      if (id && !this.isTopLevelItem($item)) {
+        let itemPath    = this.getItemPath($item);
+        let encodedKey  = this.findKeybindingEncodingByPath(itemPath);
+        let $keybinding = $item.querySelector('.mythix-menu-keybinding-callout');
+        if (!$keybinding) {
+          $keybinding = (this.ownerDocument || document).createElement('span');
+          $keybinding.classList.add('mythix-menu-keybinding-callout');
+          $item.appendChild($keybinding);
+        }
+
+        let keybindingProp = Utils.dynamicPropID(`mythix-ui-menu:${id}:keybindings:${itemPath}`, this.generateKeybindingDisplay(encodedKey));
+        $keybinding.innerText = ('' + keybindingProp);
+
+        keybindingProp.addEventListener('update', () => {
+          $keybinding.innerText = ('' + keybindingProp);
+        });
+      }
     });
 
     this.select(MENU_ELEMENT_TYPE).forEach(($menu) => {
@@ -106,7 +155,7 @@ export class MythixUIMenu extends MythixUIComponent {
         else
           $popover.setAttribute('anchor-alignment', '1.0 0.0 0.0 0.0');
 
-        $item.classList.add('has-sub-menu');
+        $item.classList.add('mythix-menu-has-sub-menu');
       }
 
       $menu.parentNode.replaceChild($popover, $menu);
@@ -164,8 +213,8 @@ export class MythixUIMenu extends MythixUIComponent {
 
   updateHasFocusClasses() {
     // Update class list for items
-    this.select(`${ITEM_ELEMENT_TYPE}.has-focus`)
-        .forEach(($element) => $element.classList.remove('has-focus'));
+    this.select(`${ITEM_ELEMENT_TYPE}.mythix-menu-has-focus`)
+        .forEach(($element) => $element.classList.remove('mythix-menu-has-focus'));
 
     // Update class based on open popovers
     this.select('mythix-popover[open]')
@@ -174,7 +223,7 @@ export class MythixUIMenu extends MythixUIComponent {
           if (!$item)
             return;
 
-          $item.classList.add('has-focus');
+          $item.classList.add('mythix-menu-has-focus');
         });
   }
 
@@ -372,18 +421,52 @@ export class MythixUIMenu extends MythixUIComponent {
     ].join('');
   }
 
+  reverseEncodedKeybinding(encodedKey) {
+    if (!encodedKey)
+      return;
+
+    // event.altKey % 2,
+    // event.ctrlKey % 2,
+    // event.shiftKey % 2,
+    // event.metaKey % 2,
+    // event.code,
+
+    let altKey    = (encodedKey.charAt(0) === '1');
+    let ctrlKey   = (encodedKey.charAt(1) === '1');
+    let shiftKey  = (encodedKey.charAt(2) === '1');
+    let metaKey   = (encodedKey.charAt(3) === '1');
+    let code      = encodedKey.substring(4);
+
+    return {
+      altKey,
+      ctrlKey,
+      shiftKey,
+      metaKey,
+      code,
+    };
+  }
+
   updateItemKeyBinding($item, event) {
     let id = this.attr('id');
     if (!id)
       return;
 
-    let command     = this.getItemPath($item);
-    let encodedKey  = this.getEncodedKeybindingForEvent(event);
+    let itemPath              = this.getItemPath($item);
+    let encodedKey            = this.getEncodedKeybindingForEvent(event);
+    let currentBoundItemPath  = this._keybindings[encodedKey];
+    if (currentBoundItemPath) {
+      // Update binding dynamic property, updating anywhere this is used in the DOM
+      // Updating existing item binding, to make sure it is cleared first
+      Utils.dynamicPropID(`mythix-ui-menu:${id}:keybindings:${currentBoundItemPath}`, '');
+    }
 
-    this._keybindings[encodedKey] = command;
+    this._keybindings[encodedKey] = itemPath;
 
-    console.log('Saving key binding for: ', command, event);
+    console.log('Saving key binding for: ', itemPath, event);
     Utils.storage.set('localStorage', 'mythix-ui-menu', id, 'keybindings', this._keybindings);
+
+    // Update binding dynamic property, updating anywhere this is used in the DOM
+    Utils.dynamicPropID(`mythix-ui-menu:${id}:keybindings:${itemPath}`, this.generateKeybindingDisplay(encodedKey));
   }
 
   onHoveredItemChange($item) {
