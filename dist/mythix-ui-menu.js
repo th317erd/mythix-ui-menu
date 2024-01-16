@@ -49,12 +49,20 @@ export class MythixUIMenu extends MythixUIComponent {
       code,
     } = this.reverseEncodedKeybinding(encodedKey);
 
+    console.log({
+      altKey,
+      ctrlKey,
+      shiftKey,
+      metaKey,
+      code,
+    });
+
     let parts = [
       ctrlKey && 'Ctrl',
       shiftKey && 'Shift',
       altKey && 'Alt',
       metaKey && 'Meta',
-      code.replace(/^Key([A-Z])/, '$1'),
+      code.replace(/^(Key|Digit)/, ''),
     ].filter(Boolean);
 
     return parts.join('+');
@@ -451,19 +459,25 @@ export class MythixUIMenu extends MythixUIComponent {
     if (!id)
       return;
 
+    let keybindings           = this._keybindings;
     let itemPath              = this.getItemPath($item);
     let encodedKey            = this.getEncodedKeybindingForEvent(event);
-    let currentBoundItemPath  = this._keybindings[encodedKey];
+    let currentBoundItemPath  = keybindings[encodedKey];
     if (currentBoundItemPath) {
       // Update binding dynamic property, updating anywhere this is used in the DOM
       // Updating existing item binding, to make sure it is cleared first
       Utils.dynamicPropID(`mythix-ui-menu:${id}:keybindings:${currentBoundItemPath}`, '');
     }
 
-    this._keybindings[encodedKey] = itemPath;
+    for (let [ key, value ] of Object.entries(keybindings)) {
+      if (value === itemPath || key === encodedKey)
+        delete keybindings[key];
+    }
+
+    keybindings[encodedKey] = itemPath;
 
     console.log('Saving key binding for: ', itemPath, event);
-    Utils.storage.set('localStorage', 'mythix-ui-menu', id, 'keybindings', this._keybindings);
+    Utils.storage.set('localStorage', 'mythix-ui-menu', id, 'keybindings', keybindings);
 
     // Update binding dynamic property, updating anywhere this is used in the DOM
     Utils.dynamicPropID(`mythix-ui-menu:${id}:keybindings:${itemPath}`, this.generateKeybindingDisplay(encodedKey));
@@ -561,7 +575,10 @@ export class MythixUIMenu extends MythixUIComponent {
       handled = true;
     };
 
-    if (event.code === 'Escape') {
+    if ($item && !this.isExpandableItem($item) && $item.matches(':hover') && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
+      this.updateItemKeyBinding($item, event);
+      handled = true;
+    } else if (event.code === 'Escape') {
       if (this.closeAll())
         handled = true;
     } else if ($item && (event.code === 'Space' || event.code === 'Enter')) {
@@ -634,9 +651,6 @@ export class MythixUIMenu extends MythixUIComponent {
             focusItem($parentItem);
         }
       }
-    } else if ($item && !this.isExpandableItem($item) && $item.matches(':hover') && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
-      this.updateItemKeyBinding($item, event);
-      handled = true;
     }
 
     if (handled) {
