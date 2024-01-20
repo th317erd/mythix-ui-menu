@@ -84,6 +84,12 @@
     display: none;
   }
 
+  mythix-menu mythix-popover {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
   mythix-menu menu {
     display: flex;
     flex-direction: column;
@@ -91,6 +97,9 @@
     position: relative;
     margin: 0;
     padding: 0;
+    border-style: solid;
+    border-color: var(--theme-active-bg-color, var(--mythix-ui-menu-active-bg));
+    border-width: var(--theme-border-width, 1px);
   }
 </style>
 

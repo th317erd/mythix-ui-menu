@@ -2,7 +2,7 @@ import {
   MythixUIComponent,
   Utils,
   Components,
-} from 'mythix-ui-core';
+} from '@cdn/mythix-ui-core@1';
 
 const IS_ITEM           = /^li$/i;
 const IS_POPOVER        = /^mythix-popover$/i;
@@ -49,14 +49,6 @@ export class MythixUIMenu extends MythixUIComponent {
       code,
     } = this.reverseEncodedKeybinding(encodedKey);
 
-    console.log({
-      altKey,
-      ctrlKey,
-      shiftKey,
-      metaKey,
-      code,
-    });
-
     let parts = [
       ctrlKey && 'Ctrl',
       shiftKey && 'Shift',
@@ -80,24 +72,20 @@ export class MythixUIMenu extends MythixUIComponent {
     super.mounted();
 
     let id                  = this.attr('id');
-    let currentHoveredItem  = null;
+    let currentFocusedItem  = null;
     let keybindings         = (id) ? (Utils.storage.get('localStorage', 'mythix-ui-menu', id, 'keybindings') || {}) : {};
 
-    console.log('Key bindings!', keybindings);
-
     Object.defineProperties(this, {
-      '_currentHoveredItem': {
+      '_currentFocusedItem': {
         enumerable:   false,
         configurable: true,
-        get:          () => currentHoveredItem,
+        get:          () => currentFocusedItem,
         set:          (newValue) => {
-          let chi = currentHoveredItem;
+          let previousFocusedItem = currentFocusedItem;
 
-          currentHoveredItem = newValue;
-          if (currentHoveredItem)
-            currentHoveredItem.focus();
+          currentFocusedItem = newValue;
 
-          this.onHoveredItemChange(newValue, chi);
+          this.onHoveredItemChange(newValue, previousFocusedItem);
         },
       },
       '_keybindings': {
@@ -172,6 +160,8 @@ export class MythixUIMenu extends MythixUIComponent {
   }
 
   unmounted() {
+    this.removeEventListener('focusout', this.onFocusOut);
+    this.removeEventListener('focusin', this.onFocusIn);
     this.removeEventListener('mouseout', this.onMouseOut);
     this.removeEventListener('mouseover', this.onMouseOver);
 
@@ -256,6 +246,10 @@ export class MythixUIMenu extends MythixUIComponent {
   }
 
   getItemPath(_$item) {
+    let commandAttribute = (_$item && _$item.getAttribute('data-command'));
+    if (commandAttribute)
+      return commandAttribute;
+
     let $item = _$item;
     let path        = [];
 
@@ -298,6 +292,18 @@ export class MythixUIMenu extends MythixUIComponent {
     }
 
     return popovers;
+  }
+
+  activateItem($item) {
+    if (this.isExpandableItem($item)) {
+      this.openToItem($item, true);
+    } else {
+      this.closeAll();
+
+      $item.focus();
+
+      this.dispatchSelectedEvent($item);
+    }
   }
 
   openToItem($item, force) {
@@ -507,37 +513,44 @@ export class MythixUIMenu extends MythixUIComponent {
 
   onMouseOver(event) {
     let $item = event.target.closest(ITEM_ELEMENT_TYPE);
-    if (this._currentHoveredItem === $item)
+    if (this._currentFocusedItem === $item)
       return;
 
-    this._currentHoveredItem = $item || null;
+    this._currentFocusedItem = $item || null;
   }
 
   onMouseOut(event) {
     let element = (event.relatedTarget) ? event.relatedTarget.closest('mythix-menu') : null;
     if (element !== this)
-      this._currentHoveredItem = null;
+      this._currentFocusedItem = null;
   }
 
   onFocusIn(event) {
     let $item = event.target.closest(ITEM_ELEMENT_TYPE);
-    if (this._currentHoveredItem === $item)
+    if (this._currentFocusedItem === $item)
       return;
 
-    this._currentHoveredItem = $item || null;
+    this._currentFocusedItem = $item || null;
   }
 
   onFocusOut(event) {
     let element = (event.relatedTarget) ? event.relatedTarget.closest('mythix-menu') : null;
     if (element !== this)
-      this._currentHoveredItem = null;
+      this._currentFocusedItem = null;
+  }
+
+  isAllowedKeyBinding(event) {
+    if (event.code === 'Tab')
+      return false;
+
+    return true;
   }
 
   onKeyDown(event) {
     if (SHOULD_IGNORE_KEY.test(event.key))
       return;
 
-    let $item = this._currentHoveredItem;
+    let $item = this._currentFocusedItem;
     let handled = false;
 
     if (!this.isAnyMenuOpen() && !$item) {
@@ -553,8 +566,6 @@ export class MythixUIMenu extends MythixUIComponent {
         return;
       }
     }
-
-    // console.log(event);
 
     const focusItem = ($item) => {
       if (!$item)
@@ -575,7 +586,7 @@ export class MythixUIMenu extends MythixUIComponent {
       handled = true;
     };
 
-    if ($item && !this.isExpandableItem($item) && $item.matches(':hover') && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
+    if ($item && this.isAllowedKeyBinding(event) && !this.isExpandableItem($item) && $item.matches(':hover') && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
       this.updateItemKeyBinding($item, event);
       handled = true;
     } else if (event.code === 'Escape') {
@@ -673,15 +684,6 @@ export class MythixUIMenu extends MythixUIComponent {
     event.preventDefault();
 
     this.activateItem($item);
-  }
-
-  activateItem($item) {
-    if (this.isExpandableItem($item)) {
-      this.openToItem($item);
-    } else {
-      this.dispatchSelectedEvent($item);
-      this.closeAll();
-    }
   }
 }
 
