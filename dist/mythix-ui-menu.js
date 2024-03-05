@@ -1,7 +1,7 @@
 import {
   MythixUIComponent,
   Utils,
-  Components,
+  ComponentUtils,
 } from '@cdn/mythix-ui-core@1';
 
 const IS_ITEM           = /^li$/i;
@@ -106,7 +106,7 @@ export class MythixUIMenu extends MythixUIComponent {
     this.addEventListener('focusin', this.onFocusIn);
     this.addEventListener('focusout', this.onFocusOut);
 
-    let tabIndexCounter = Components.getLargestDocumentTabIndex() + 1;
+    let tabIndexCounter = ComponentUtils.getLargestDocumentTabIndex() + 1;
 
     this.select(ITEM_ELEMENT_TYPE).forEach(($item) => {
       if (!$item.getAttribute('id'))
