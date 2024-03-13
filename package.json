@@ -1,6 +1,6 @@
 {
   "name": "mythix-ui-menu",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A menu component for Mythix UI",
   "main": "dist/mythix-ui-menu.js",
   "type": "module",
