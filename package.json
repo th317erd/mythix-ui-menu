@@ -1,7 +1,7 @@
 {
   "name": "mythix-ui-menu",
-  "version": "1.0.0",
-  "description": "A tabbed view component for Mythix UI",
+  "version": "0.0.9",
+  "description": "A menu component for Mythix UI",
   "main": "dist/mythix-ui-menu.js",
   "type": "module",
   "directories": {

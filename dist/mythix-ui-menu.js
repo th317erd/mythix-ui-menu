@@ -1,5 +1,6 @@
 import {
   MythixUIComponent,
+  BaseUtils,
   Utils,
   ComponentUtils,
 } from '@cdn/mythix-ui-core@1';
@@ -110,7 +111,7 @@ export class MythixUIMenu extends MythixUIComponent {
 
     this.select(ITEM_ELEMENT_TYPE).forEach(($item) => {
       if (!$item.getAttribute('id'))
-        $item.setAttribute('id', Utils.getObjectID($item));
+        $item.setAttribute('id', BaseUtils.getObjectID($item));
 
       let tabIndex = $item.getAttribute('tabindex');
       if (tabIndex == null || tabIndex === '')
@@ -137,14 +138,14 @@ export class MythixUIMenu extends MythixUIComponent {
 
     this.select(MENU_ELEMENT_TYPE).forEach(($menu) => {
       if (!$menu.getAttribute('id'))
-        $menu.setAttribute('id', Utils.getObjectID($menu));
+        $menu.setAttribute('id', BaseUtils.getObjectID($menu));
 
       let $popover = document.createElement('mythix-popover');
-      $popover.setAttribute('id', Utils.getObjectID($popover));
+      $popover.setAttribute('id', BaseUtils.getObjectID($popover));
 
       let $item = $menu.closest(ITEM_ELEMENT_TYPE);
       if ($item) {
-        $popover.setAttribute('anchor', $item.getAttribute('id') || Utils.getObjectID($item));
+        $popover.setAttribute('anchor', $item.getAttribute('id') || BaseUtils.getObjectID($item));
 
         if (this.isTopLevelItem($item))
           $popover.setAttribute('anchor-alignment', '0.0 1.0 0.0 0.0');
